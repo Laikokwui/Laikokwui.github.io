@@ -1,10 +1,12 @@
 <?php
 require_once "config.php";
  
-$title = $description = "";
-$title_err = $description_err = "";
+$title = $description = $image = "";
+$title_err = $description_err = $image_err = "";
  
-if($_SERVER["REQUEST_METHOD"] == "POST"){
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $add_image = false;
+
     $input_title = trim($_POST["title"]);
     if (empty($input_title)) {
         $title_err = "Please enter a title.";
@@ -13,33 +15,66 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     }
     
     $input_description = trim($_POST["description"]);
-    if(empty($input_description)){
+    if (empty($input_description)) {
         $description_err = "Please enter a description.";     
     } else{
         $description = $input_description;
     }
+
+    if (!empty($_FILES["imageupload"]["name"])) {
+        $add_image = true;
+        $target_dir = "uploads/";
+        $target_file = $target_dir . basename($_FILES["imageupload"]["name"]);
+        $imageFileType = strtolower(pathinfo($target_file,PATHINFO_EXTENSION));
+
+        $input_image = getimagesize($_FILES["imageupload"]["tmp_name"]);
+        if ($input_image !== false) {
+            $image = htmlspecialchars(basename( $_FILES["imageupload"]["name"]));
+        } else {
+            $image_err = "File is not an image.";
+        }
+
+        if (file_exists($target_file)) {
+            $image_err .= "Sorry, file already exists.";
+        }
+
+        if ($_FILES["imageupload"]["size"] > 500000) {
+            $image_err .= "Please upload image file size less than 500kB.";
+        }
+
+        if ($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg") {
+            $image_err .= "Please upload jpg, jpeg & png files.";
+        }
+    }
     
-    // Check input errors before inserting in database
-    if(empty($title_err) && empty($description_err)){
-        // Prepare an insert statement
-        $sql = "INSERT INTO blog (title, description) VALUES (?, ?)";
-         
-        if($stmt = mysqli_prepare($link, $sql)){
-            // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "ss", $param_title, $param_description);
+    if (empty($title_err) && empty($description_err)) {
+        $sql = "INSERT INTO blog (title, description, image) VALUES (?, ?, ?)";
+
+        if ($stmt = mysqli_prepare($link, $sql)) {
+            mysqli_stmt_bind_param($stmt, "sss", $param_title, $param_description, $param_image);
             
-            // Set parameters
             $param_title = $title;
             $param_description = $description;
+            $param_image = $image;
             
-            // Attempt to execute the prepared statement
-            if(mysqli_stmt_execute($stmt)){
-                // Records created successfully. Redirect to landing page
-                header("location: index.php");
-                exit();
-            } else{
-                echo "Oops! Something went wrong. Please try again later.";
+            if ($add_image) {
+                if (mysqli_stmt_execute($stmt) && move_uploaded_file($_FILES["imageupload"]["tmp_name"], $target_file)) {
+                    header("location: index.php");
+                    exit();
+                } else {
+                    $image_err .= "Sorry, there was an error uploading your file.";
+                    echo "Oops! Something went wrong. Please try again later.";
+                }
+            } else {
+                if (mysqli_stmt_execute($stmt)) {
+                    header("location: index.php");
+                    exit();
+                } else {
+                    $image_err .= "Sorry, there was an error uploading your file.";
+                    echo "Oops! Something went wrong. Please try again later.";
+                }
             }
+            
         }
          
         // Close statement
@@ -70,7 +105,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <div class="row">
                 <div class="col-md-12">
                     <h2 class="mt-5">Create Blog</h2>
-                    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+                    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" enctype="multipart/form-data">
                         <div class="form-group">
                             <label>Title</label>
                             <input type="text" name="title" class="form-control <?php echo (!empty($title_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $title; ?>">
@@ -80,6 +115,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                             <label>Description</label>
                             <textarea name="description" class="form-control <?php echo (!empty($description_err)) ? 'is-invalid' : ''; ?>"><?php echo $description; ?></textarea>
                             <span class="invalid-feedback"><?php echo $description_err;?></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Image</label>
+                            <input type="file" name="imageupload" id="imageupload" class="form-control <?php echo (!empty($image_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $image; ?>">
+                            <span class="invalid-feedback"><?php echo $image_err;?></span>
                         </div>
                         <input type="submit" class="btn btn-primary" value="Submit">
                         <a href="index.php" class="btn btn-secondary ml-2">Cancel</a>

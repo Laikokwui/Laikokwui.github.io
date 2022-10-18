@@ -17,6 +17,7 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))) {
                 
                 $title = $row["title"];
                 $description = $row["description"];
+                $image = $row["image"];
             } else{
                 header("location: error.php");
                 exit();
@@ -54,6 +55,16 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))) {
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-12">
+                    <?php 
+                    if (!empty($image)) {
+                        echo '
+                        <div class="row">
+                            <div class="img-fluid w-100">
+                                <img src="uploads/'.$image.'" class="img-thumbnail">
+                            </div>
+                        </div>';
+                    }
+                    ?>
                     <h1 class="mt-5 mb-3"><?php echo $row["title"]; ?></h1>
                     <div class="form-group">
                         <p><b><?php echo $row["description"]; ?></b></p>

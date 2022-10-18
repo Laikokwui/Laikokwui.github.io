@@ -1,6 +1,28 @@
 <?php
 if (isset($_POST["id"]) && !empty($_POST["id"])) {
     require_once "config.php";
+    $filepath = "";
+    $delete_image = false;
+    $sql = "SELECT * FROM blog WHERE id = ?";
+
+    if($stmt = mysqli_prepare($link, $sql)){
+        mysqli_stmt_bind_param($stmt, "i", $param_id);
+        
+        $param_id = trim($_POST["id"]);
+
+        if(mysqli_stmt_execute($stmt)) {
+            $result = mysqli_stmt_get_result($stmt);
+            $row = mysqli_fetch_array($result);
+
+            if (!empty($row['image'])) {
+                $filepath = 'uploads/'.$row['image'];
+                $delete_image = true;
+            }
+            
+        } else {
+            echo "Oops! Something went wrong. Please try again later.";
+        }
+    }
     
     $sql = "DELETE FROM blog WHERE id = ?";
     
@@ -8,15 +30,24 @@ if (isset($_POST["id"]) && !empty($_POST["id"])) {
         mysqli_stmt_bind_param($stmt, "i", $param_id);
         
         $param_id = trim($_POST["id"]);
-        
-        if(mysqli_stmt_execute($stmt)){
-            header("location: index.php");
-            exit();
-        } else{
-            echo "Oops! Something went wrong. Please try again later.";
+        if ($delete_image){
+            if(mysqli_stmt_execute($stmt) && unlink($filepath)) {
+                header("location: index.php");
+                exit();
+            } else {
+                echo "Oops! Something went wrong. Please try again later.";
+            } 
+        } else {
+            if(mysqli_stmt_execute($stmt)) {
+                header("location: index.php");
+                exit();
+            } else {
+                echo "Oops! Something went wrong. Please try again later.";
+            } 
         }
+        
     }
-     
+    
     mysqli_stmt_close($stmt);
     
     mysqli_close($link);

@@ -45,6 +45,7 @@
                                     echo "<tr>";
                                         echo "<th>Title</th>";
                                         echo "<th>Description</th>";
+                                        echo "<th>Image</th>";
                                         echo "<th>Action</th>";
                                     echo "</tr>";
                                 echo "</thead>";
@@ -53,6 +54,12 @@
                                     echo "<tr>";
                                         echo "<td>" . $row['title'] . "</td>";
                                         echo "<td>" . $row['description'] . "</td>";
+                                        if (empty($row['image'])) {
+                                            echo "<td></td>";
+                                        }
+                                        else {
+                                            echo "<td><img src=\"uploads/" . $row['image'] . "\" class=\"img-thumbnail rounded mx-auto d-block\"></td>";
+                                        }
                                         echo "<td>";
                                             echo '<a href="show.php?id='. $row['id'] .'" class="mr-3" data-toggle="tooltip"><span class="fa fa-eye"></span> View</a>';
                                             echo '<a href="update.php?id='. $row['id'] .'" class="mr-3" data-toggle="tooltip"><span class="fa fa-pencil"></span> Update</a>';
